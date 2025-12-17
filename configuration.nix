@@ -8,64 +8,53 @@ in
     ./hardware-configuration.nix
     (import "${home-manager}/nixos")
   ];
-  
-  ### BOOT & SYSTEM BASE
 
-  # Bootloader
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  # Networking & Hostname
   networking.hostName = "sergio-nixos";
   networking.networkmanager.enable = true;
-  
-  # Kernel / Hardware (External drives & general configs)
-  nixpkgs.config.allowUnfree = true; # Allow unfree packages globally
+
+  nixpkgs.config.allowUnfree = true;
 
   fileSystems."/srv/Files" = {
     device = "/dev/disk/by-id/wwn-0x5000039422600d57-part1";
     fsType = "ext4";
   };
-  
-  ### LOCALE & TIME
 
   time.timeZone = "America/Fortaleza";
 
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {
-    LC_ADDRESS = "pt_BR.UTF-8";
-    LC_IDENTIFICATION = "pt_BR.UTF-8";
-    LC_MEASUREMENT = "pt_BR.UTF-8";
-    LC_MONETARY = "pt_BR.UTF-8";
-    LC_NAME = "pt_BR.UTF-8";
-    LC_NUMERIC = "pt_BR.UTF-8";
-    LC_PAPER = "pt_BR.UTF-8";
-    LC_TELEPHONE = "pt_BR.UTF-8";
-    LC_TIME = "pt_BR.UTF-8";
+    LC_ADDRESS = "en_US.UTF-8";
+    LC_IDENTIFICATION = "en_US.UTF-8";
+    LC_MEASUREMENT = "en_US.UTF-8";
+    LC_MONETARY = "en_US.UTF-8";
+    LC_NAME = "en_US.UTF-8";
+    LC_NUMERIC = "en_US.UTF-8";
+    LC_PAPER = "en_US.UTF-8";
+    LC_TELEPHONE = "en_US.UTF-8";
+    LC_TIME = "en_US.UTF-8";
   };
-  
-  # Configure keymap (TTY)
+
   console.keyMap = "br-abnt2";
-  
-  ### GUI (GNOME) & AUDIO
-  
-  # X11 & GNOME
-  services.xserver = {
-    enable = true;
+
+  services = {
     displayManager.gdm.enable = true;
     desktopManager.gnome.enable = true;
-    
-    # Keymap configuration for X11/GNOME
-    xkb = {
-      layout = "br";
-      variant = "";
-    };
 
-    # Exclude default xterm
-    excludePackages = [ pkgs.xterm ];
+    xserver = {
+      enable = true;
+
+      xkb = {
+        layout = "br";
+        variant = "";
+      };
+
+      excludePackages = [ pkgs.xterm ];
+    };
   };
-  
-  # Remove GNOME Bloatware
+
   environment.gnome.excludePackages = with pkgs; [
     decibels
     epiphany
@@ -85,11 +74,10 @@ in
     nixos-render-docs
     seahorse
     simple-scan
-    totem
+    showtime
     yelp
   ];
 
-  # Audio (Pipewire)
   services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
@@ -98,33 +86,28 @@ in
     alsa.support32Bit = true;
     pulse.enable = true;
   };
-  
-  # Printing (Disabled)
+
   services.printing.enable = false;
-  
-  # Fonts
+
   fonts.packages = with pkgs; [
-    nerd-fonts.fira-code # Manually set as console font
+    nerd-fonts.fira-code
     jetbrains-mono
   ];
-  
-  ### USERS & SYSTEM PACKAGES
 
   # Don't forget to set a password with ‘passwd’
   users.users.sergio = {
     isNormalUser = true;
     description = "Sérgio Dantas";
     extraGroups = [ "networkmanager" "wheel" ];
-    shell = pkgs.zsh; # Explicitly set ZSH as the login shell
+    shell = pkgs.zsh;
   };
-  
-  # Global Program Settings
-  programs.zsh.enable = true; # Required for the system to recognize ZSH
-  programs.firefox.enable = false; # Disable default Firefox
+
+  programs.zsh.enable = true;
+  programs.firefox.enable = false;
   programs.appimage.enable = true;
+  services.flatpak.enable = true;
   documentation.nixos.enable = false;
 
-  # Essential SYSTEM Packages (Available to root and all users)
   environment.systemPackages = with pkgs; [
     curl
     git
@@ -134,98 +117,117 @@ in
   ];
   
   system.stateVersion = "25.11";
-  
-  ### HOME MANAGER (User Configuration)
 
   home-manager.users.sergio = { pkgs, ... }: {
-    # Allow unfree packages within home-manager context
     nixpkgs.config.allowUnfree = true;
-  
-    ### USER PACKAGES
-    
+
     home.packages = with pkgs; [
-      # Browsers & Internet
       discord
       microsoft-edge
       qbittorrent
-      telegram-desktop
-      ungoogled-chromium
-
-      # Productivity & Study
+      flatpak # Don't forget to add the flathub repo
       anki
       obsidian
       texliveFull
       texstudio
-
-      # > Media
       spotify
-      stremio
       vlc
-
-      # > Development & CLI
       bun
       nodejs_24
       poetry
       python313
       uv
-      
-      # > GNOME Extensions
       gnomeExtensions.appindicator
+      gnomeExtensions.blur-my-shell
+      gnomeExtensions.rounded-window-corners-reborn
     ];
-    
-    ### PROGRAM CONFIGURATIONS
-    
-    # GNOME Settings (dconf)
+
     dconf.settings = {
       "org/gnome/shell" = {
         disable-user-extensions = false;
-        enabled-extensions = [ pkgs.gnomeExtensions.appindicator.extensionUuid ];
+        enabled-extensions = [
+          pkgs.gnomeExtensions.appindicator.extensionUuid
+          pkgs.gnomeExtensions.blur-my-shell.extensionUuid
+          pkgs.gnomeExtensions.rounded-window-corners-reborn.extensionUuid
+        ];
+      };
+
+      "org/gnome/TextEditor" = {
+        highlight-current-line = true;
+        indent-style = "space";
+        restore-session = false;
+        show-line-numbers = true;
+        tab-width = 2;
+      };
+
+      "org/gnome/Console" = {
+        custom-font = "FiraCode Nerd Font Mono 11";
+        use-system-font = false;
+      };
+
+      "org/gnome/desktop/wm/preferences" = {
+        button-layout = ":minimize,maximize,close";
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys" = {
+        custom-keybindings = [
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/"
+        ];
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0" = {
+        name = "Open Console";
+        command = "kgx";
+        binding = "<Control><Alt>t";
+      };
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1" = {
+        name = "Open Files";
+        command = "nautilus";
+        binding = "<Super>f";
+      };
+
+      "org/gnome/desktop/wm/keybindings" = {
+        show-desktop = [ "<Super>d" ];
       };
     };
-    
-    # Shell (ZSH)
-    programs.zsh = {  
+
+    programs.zsh = {
       enable = true;
-      
-      # ZSH plugins
+
       autosuggestion.enable = true;
       syntaxHighlighting.enable = true;
-      
-      # Aliases
+
       shellAliases = {
         nixrbs = "sudo nixos-rebuild switch";
         nixrbsu = "sudo nixos-rebuild switch --upgrade";
         nixcfg = "sudo nano /etc/nixos/configuration.nix";
       };
     };
-    
-    # Prompt (Starship)
+
     programs.starship = {
       enable = true;
       enableZshIntegration = true;
     };
-    
-    # Editor (VS Code)
+
     programs.vscode = {
       enable = true;
     };
-  
-    # Version control (Git)
+
     # Don't forget to create and set SSH key on GitHub
     programs.git = {
       enable = true;
-      
-      userName = "Sérgio Dantas";
-      userEmail = "sergiodnts828@gmail.com";
-      
+
+      settings = {
+        user.name = "Sérgio Dantas";
+        user.email = "sergiodnts828@gmail.com";
+        init.defaultBranch = "main";
+        gpg.format = "ssh";
+      };
+
       signing = {
         key = "/home/sergio/.ssh/id_ed25519.pub";
         signByDefault = true;
-      };
-      
-      extraConfig = {
-        init.defaultBranch = "main";
-        gpg.format = "ssh";
       };
     };
 
