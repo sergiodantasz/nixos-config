@@ -24,17 +24,23 @@ in
 
   time.timeZone = "America/Fortaleza";
 
-  i18n.defaultLocale = "en_US.UTF-8";
-  i18n.extraLocaleSettings = {
-    LC_ADDRESS = "en_US.UTF-8";
-    LC_IDENTIFICATION = "en_US.UTF-8";
-    LC_MEASUREMENT = "en_US.UTF-8";
-    LC_MONETARY = "en_US.UTF-8";
-    LC_NAME = "en_US.UTF-8";
-    LC_NUMERIC = "en_US.UTF-8";
-    LC_PAPER = "en_US.UTF-8";
-    LC_TELEPHONE = "en_US.UTF-8";
-    LC_TIME = "en_US.UTF-8";
+  i18n = {
+    defaultLocale = "en_US.UTF-8";
+    extraLocaleSettings = {
+      LC_ADDRESS = "en_US.UTF-8";
+      LC_IDENTIFICATION = "en_US.UTF-8";
+      LC_MEASUREMENT = "en_US.UTF-8";
+      LC_MONETARY = "en_US.UTF-8";
+      LC_NAME = "en_US.UTF-8";
+      LC_NUMERIC = "en_US.UTF-8";
+      LC_PAPER = "en_US.UTF-8";
+      LC_TELEPHONE = "en_US.UTF-8";
+      LC_TIME = "en_US.UTF-8";
+    };
+    inputMethod = {
+      enable = true;
+      type = "ibus";
+    };
   };
 
   console.keyMap = "br-abnt2";
@@ -115,11 +121,15 @@ in
     wget
     zsh
   ];
-  
+
   system.stateVersion = "25.11";
 
   home-manager.users.sergio = { pkgs, ... }: {
     nixpkgs.config.allowUnfree = true;
+
+    home.sessionVariables = {
+      PYTHON_KEYRING_BACKEND = "keyring.backends.null.Keyring";
+    };
 
     home.packages = with pkgs; [
       discord
@@ -132,11 +142,13 @@ in
       texstudio
       spotify
       vlc
+      gh
       bun
       nodejs_24
-      poetry
+      poetry # Don't forget to set virtualenvs.in-project to true
       python313
       uv
+      deno
       gnomeExtensions.appindicator
       gnomeExtensions.blur-my-shell
       gnomeExtensions.rounded-window-corners-reborn
@@ -157,12 +169,16 @@ in
         indent-style = "space";
         restore-session = false;
         show-line-numbers = true;
-        tab-width = 2;
+        # How can I set tab-width = uint32 2?
       };
 
       "org/gnome/Console" = {
         custom-font = "FiraCode Nerd Font Mono 11";
         use-system-font = false;
+      };
+      
+      "org/gnome/desktop/sound" = {
+        allow-volume-above-100-percent = true;
       };
 
       "org/gnome/desktop/wm/preferences" = {
@@ -208,10 +224,6 @@ in
     programs.starship = {
       enable = true;
       enableZshIntegration = true;
-    };
-
-    programs.vscode = {
-      enable = true;
     };
 
     # Don't forget to create and set SSH key on GitHub
